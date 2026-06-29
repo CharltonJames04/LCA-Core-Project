@@ -22,7 +22,7 @@ ModernTech HR System is a front-end proof of concept web application created for
 - Bootstrap
 
 ## Key Features
-- Mock login system with hardcoded credentials
+- login system with credentials
 - Responsive dashboard for HR staff
 - Employee management with 15 dummy employee records
 - Add, view, edit and delete employees
@@ -45,11 +45,3 @@ Password: `password123`
 2. Open the folder in Visual Studio Code.
 3. Open `index.html` in your browser.
 4. You can also use the VS Code Live Server extension for a better local preview.
-
-## Business Rules Implemented
-- Employee data is centralised in one interface.
-- Payroll calculations are automated using salary, tax, UIF and medical aid deductions.
-- Digital payslips are generated for employees.
-- Leave requests can be submitted and reviewed by HR staff.
-- Approved leave automatically affects attendance status.
-- The system is fully front-end and uses dummy data.
