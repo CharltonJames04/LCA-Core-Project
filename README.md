@@ -1,4 +1,4 @@
-# LCA Core Project
+# LCA Course 1 Core Project
 
 **Trainee:** Charlton James
 
