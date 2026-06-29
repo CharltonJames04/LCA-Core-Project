@@ -1,0 +1,676 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>ModernTech HR Management Portal</title>
+    <link
+      href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/css/bootstrap.min.css"
+      rel="stylesheet"
+    />
+    <link rel="stylesheet" href="css/style.css" />
+  </head>
+  <body>
+    <div id="app">
+      <section
+        v-if="!loggedIn"
+        class="login-screen d-flex align-items-center justify-content-center min-vh-100"
+      >
+        <div class="login-card shadow-lg p-4 rounded-4 bg-white">
+          <h1 class="fw-bold text-primary mb-1">
+            ModernTech HR Management Portal
+          </h1>
+
+          <form @submit.prevent="login">
+            <div class="mb-3">
+              <label class="form-label">Username</label>
+              <input
+                v-model="loginForm.username"
+                class="form-control"
+                required
+              />
+            </div>
+            <div class="mb-3">
+              <label class="form-label">Password</label>
+              <input
+                v-model="loginForm.password"
+                type="password"
+                class="form-control"
+                required
+              />
+            </div>
+            <div v-if="loginError" class="alert alert-danger py-2">
+              {{ loginError }}
+            </div>
+            <button class="btn btn-primary w-100">Login</button>
+          </form>
+        </div>
+      </section>
+
+      <section v-else>
+        <nav
+          class="navbar navbar-expand-lg navbar-dark bg-primary sticky-top shadow-sm"
+        >
+          <div class="container-fluid">
+            <a class="navbar-brand fw-bold" href="#">ModernTech HR</a>
+            <button
+              class="navbar-toggler"
+              type="button"
+              data-bs-toggle="collapse"
+              data-bs-target="#navMenu"
+            >
+              <span class="navbar-toggler-icon"></span>
+            </button>
+            <div class="collapse navbar-collapse" id="navMenu">
+              <ul class="navbar-nav me-auto mb-2 mb-lg-0">
+                <li class="nav-item">
+                  <button
+                    class="nav-link btn btn-link"
+                    @click="page='dashboard'"
+                  >
+                    Dashboard
+                  </button>
+                </li>
+                <li class="nav-item">
+                  <button
+                    class="nav-link btn btn-link"
+                    @click="page='employees'"
+                  >
+                    Employees
+                  </button>
+                </li>
+                <li class="nav-item">
+                  <button class="nav-link btn btn-link" @click="page='payroll'">
+                    Payroll
+                  </button>
+                </li>
+                <li class="nav-item">
+                  <button class="nav-link btn btn-link" @click="page='leave'">
+                    Leave
+                  </button>
+                </li>
+                <li class="nav-item">
+                  <button
+                    class="nav-link btn btn-link"
+                    @click="page='attendance'"
+                  >
+                    Attendance
+                  </button>
+                </li>
+                <li class="nav-item">
+                  <button
+                    class="nav-link btn btn-link"
+                    @click="page='reports'; drawCharts()"
+                  >
+                    Reports
+                  </button>
+                </li>
+              </ul>
+              <button class="btn btn-outline-light btn-sm" @click="logout">
+                Logout
+              </button>
+            </div>
+          </div>
+        </nav>
+
+        <main class="container-fluid py-4">
+          <section v-if="page==='dashboard'">
+            <div
+              class="d-flex flex-wrap align-items-center justify-content-between mb-4 gap-2"
+            >
+              <div>
+                <h2 class="fw-bold">HR Dashboard</h2>
+                <p class="text-muted">
+                  Centralised employee, payroll, leave and attendance system.
+                </p>
+              </div>
+              <button class="btn btn-success" @click="page='employees'">
+                + Add / Manage Employees
+              </button>
+            </div>
+
+            <div class="row g-3">
+              <div
+                class="col-md-6 col-xl-3"
+                v-for="card in dashboardCards"
+                :key="card.title"
+              >
+                <div class="card stat-card border-0 shadow-sm h-100">
+                  <div class="card-body">
+                    <p class="text-muted mb-1">{{ card.title }}</p>
+                    <h3 class="fw-bold mb-0">{{ card.value }}</h3>
+                  </div>
+                </div>
+              </div>
+            </div>
+
+            <div class="row g-4 mt-2">
+              <div class="col-lg-8">
+                <div class="card border-0 shadow-sm">
+                  <div class="card-body">
+                    <h5 class="fw-bold">Recent Leave Requests</h5>
+                    <div class="table-responsive">
+                      <table class="table align-middle">
+                        <thead>
+                          <tr>
+                            <th>Employee</th>
+                            <th>Type</th>
+                            <th>Dates</th>
+                            <th>Status</th>
+                          </tr>
+                        </thead>
+                        <tbody>
+                          <tr
+                            v-for="request in leaveRequests.slice(0,5)"
+                            :key="request.id"
+                          >
+                            <td>{{ getEmployeeName(request.employeeId) }}</td>
+                            <td>{{ request.type }}</td>
+                            <td>{{ request.start }} to {{ request.end }}</td>
+                            <td>
+                              <span :class="statusClass(request.status)"
+                                >{{ request.status }}</span
+                              >
+                            </td>
+                          </tr>
+                        </tbody>
+                      </table>
+                    </div>
+                  </div>
+                </div>
+              </div>
+              <div class="col-lg-4">
+                <div class="card border-0 shadow-sm h-100">
+                  <div class="card-body">
+                    <h5 class="fw-bold">Quick Actions</h5>
+                    <button
+                      class="btn btn-outline-primary w-100 mb-2"
+                      @click="page='employees'"
+                    >
+                      Manage Employees
+                    </button>
+                    <button
+                      class="btn btn-outline-primary w-100 mb-2"
+                      @click="page='payroll'"
+                    >
+                      Run Payroll
+                    </button>
+                    <button
+                      class="btn btn-outline-primary w-100 mb-2"
+                      @click="page='leave'"
+                    >
+                      Review Leave
+                    </button>
+                    <button
+                      class="btn btn-outline-primary w-100"
+                      @click="page='reports'; drawCharts()"
+                    >
+                      View Reports
+                    </button>
+                  </div>
+                </div>
+              </div>
+            </div>
+          </section>
+
+          <section v-if="page==='employees'">
+            <div
+              class="d-flex flex-wrap justify-content-between align-items-center mb-3 gap-2"
+            >
+              <h2 class="fw-bold">Employee Management</h2>
+              <button class="btn btn-success" @click="openEmployeeForm()">
+                + Add Employee
+              </button>
+            </div>
+            <div class="row mb-3 g-2">
+              <div class="col-md-8">
+                <input
+                  v-model="search"
+                  class="form-control"
+                  placeholder="Search by name, department, position or email"
+                />
+              </div>
+              <div class="col-md-4">
+                <select v-model="departmentFilter" class="form-select">
+                  <option value="">All Departments</option>
+                  <option v-for="dept in departments" :key="dept">
+                    {{ dept }}
+                  </option>
+                </select>
+              </div>
+            </div>
+            <div class="card border-0 shadow-sm">
+              <div class="card-body table-responsive">
+                <table class="table table-hover align-middle">
+                  <thead>
+                    <tr>
+                      <th>ID</th>
+                      <th>Name</th>
+                      <th>Department</th>
+                      <th>Position</th>
+                      <th>Email</th>
+                      <th>Salary</th>
+                      <th>Status</th>
+                      <th>Actions</th>
+                    </tr>
+                  </thead>
+                  <tbody>
+                    <tr
+                      v-for="employee in filteredEmployees"
+                      :key="employee.id"
+                    >
+                      <td>{{ employee.id }}</td>
+                      <td>{{ employee.name }}</td>
+                      <td>{{ employee.department }}</td>
+                      <td>{{ employee.position }}</td>
+                      <td>{{ employee.email }}</td>
+                      <td>{{ currency(employee.salary) }}</td>
+                      <td>
+                        <span class="badge bg-success"
+                          >{{ employee.status }}</span
+                        >
+                      </td>
+                      <td class="text-nowrap">
+                        <button
+                          class="btn btn-sm btn-outline-info me-1"
+                          @click="viewEmployee(employee)"
+                        >
+                          View
+                        </button>
+                        <button
+                          class="btn btn-sm btn-outline-warning me-1"
+                          @click="openEmployeeForm(employee)"
+                        >
+                          Edit
+                        </button>
+                        <button
+                          class="btn btn-sm btn-outline-danger"
+                          @click="deleteEmployee(employee.id)"
+                        >
+                          Delete
+                        </button>
+                      </td>
+                    </tr>
+                  </tbody>
+                </table>
+              </div>
+            </div>
+          </section>
+
+          <section v-if="page==='payroll'">
+            <h2 class="fw-bold mb-3">Payroll & Payslips</h2>
+            <div class="card border-0 shadow-sm">
+              <div class="card-body table-responsive">
+                <table class="table align-middle">
+                  <thead>
+                    <tr>
+                      <th>Employee</th>
+                      <th>Gross</th>
+                      <th>Tax 18%</th>
+                      <th>UIF 1%</th>
+                      <th>Medical Aid</th>
+                      <th>Net Pay</th>
+                      <th></th>
+                    </tr>
+                  </thead>
+                  <tbody>
+                    <tr v-for="employee in employees" :key="employee.id">
+                      <td>{{ employee.name }}</td>
+                      <td>{{ currency(employee.salary) }}</td>
+                      <td>{{ currency(calcPayroll(employee).tax) }}</td>
+                      <td>{{ currency(calcPayroll(employee).uif) }}</td>
+                      <td>{{ currency(calcPayroll(employee).medical) }}</td>
+                      <td class="fw-bold">
+                        {{ currency(calcPayroll(employee).net) }}
+                      </td>
+                      <td>
+                        <button
+                          class="btn btn-sm btn-primary"
+                          @click="generatePayslip(employee)"
+                        >
+                          Generate Payslip
+                        </button>
+                      </td>
+                    </tr>
+                  </tbody>
+                </table>
+              </div>
+            </div>
+          </section>
+
+          <section v-if="page==='leave'">
+            <h2 class="fw-bold mb-3">Leave Requests</h2>
+            <div class="row g-4">
+              <div class="col-lg-4">
+                <div class="card border-0 shadow-sm">
+                  <div class="card-body">
+                    <h5 class="fw-bold">Submit Leave Request</h5>
+                    <form @submit.prevent="submitLeave">
+                      <select
+                        v-model="leaveForm.employeeId"
+                        class="form-select mb-2"
+                        required
+                      >
+                        <option value="">Select employee</option>
+                        <option v-for="e in employees" :value="e.id">
+                          {{ e.name }}
+                        </option>
+                      </select>
+                      <select
+                        v-model="leaveForm.type"
+                        class="form-select mb-2"
+                        required
+                      >
+                        <option value="Annual Leave">Annual Leave</option>
+                        <option value="Sick Leave">Sick Leave</option>
+                        <option value="Family Responsibility">
+                          Family Responsibility
+                        </option>
+                      </select>
+                      <input
+                        v-model="leaveForm.start"
+                        type="date"
+                        class="form-control mb-2"
+                        required
+                      />
+                      <input
+                        v-model="leaveForm.end"
+                        type="date"
+                        class="form-control mb-2"
+                        required
+                      />
+                      <textarea
+                        v-model="leaveForm.reason"
+                        class="form-control mb-2"
+                        placeholder="Reason"
+                        required
+                      ></textarea>
+                      <button class="btn btn-success w-100">
+                        Submit Request
+                      </button>
+                    </form>
+                  </div>
+                </div>
+              </div>
+              <div class="col-lg-8">
+                <div class="card border-0 shadow-sm">
+                  <div class="card-body table-responsive">
+                    <table class="table align-middle">
+                      <thead>
+                        <tr>
+                          <th>Employee</th>
+                          <th>Type</th>
+                          <th>Dates</th>
+                          <th>Reason</th>
+                          <th>Status</th>
+                          <th>Action</th>
+                        </tr>
+                      </thead>
+                      <tbody>
+                        <tr v-for="request in leaveRequests" :key="request.id">
+                          <td>{{ getEmployeeName(request.employeeId) }}</td>
+                          <td>{{ request.type }}</td>
+                          <td>{{ request.start }} to {{ request.end }}</td>
+                          <td>{{ request.reason }}</td>
+                          <td>
+                            <span :class="statusClass(request.status)"
+                              >{{ request.status }}</span
+                            >
+                          </td>
+                          <td>
+                            <button
+                              class="btn btn-sm btn-success me-1"
+                              @click="updateLeave(request,'Approved')"
+                            >
+                              Approve</button
+                            ><button
+                              class="btn btn-sm btn-danger"
+                              @click="updateLeave(request,'Rejected')"
+                            >
+                              Reject
+                            </button>
+                          </td>
+                        </tr>
+                      </tbody>
+                    </table>
+                  </div>
+                </div>
+              </div>
+            </div>
+          </section>
+
+          <section v-if="page==='attendance'">
+            <h2 class="fw-bold mb-3">Attendance Tracking</h2>
+            <div class="card border-0 shadow-sm">
+              <div class="card-body table-responsive">
+                <table class="table align-middle">
+                  <thead>
+                    <tr>
+                      <th>Employee</th>
+                      <th>Department</th>
+                      <th>Today</th>
+                      <th>Attendance Rate</th>
+                    </tr>
+                  </thead>
+                  <tbody>
+                    <tr v-for="employee in employees" :key="employee.id">
+                      <td>{{ employee.name }}</td>
+                      <td>{{ employee.department }}</td>
+                      <td>
+                        <span :class="attendanceClass(employee)"
+                          >{{ attendanceStatus(employee) }}</span
+                        >
+                      </td>
+                      <td>{{ employee.attendanceRate }}%</td>
+                    </tr>
+                  </tbody>
+                </table>
+              </div>
+            </div>
+          </section>
+
+          <section v-if="page==='reports'">
+            <h2 class="fw-bold mb-3">Reports & Data Visualisation</h2>
+            <div class="row g-4">
+              <div class="col-lg-6">
+                <div class="card border-0 shadow-sm">
+                  <div class="card-body">
+                    <h5>Employees by Department</h5>
+                    <canvas id="departmentChart"></canvas>
+                  </div>
+                </div>
+              </div>
+              <div class="col-lg-6">
+                <div class="card border-0 shadow-sm">
+                  <div class="card-body">
+                    <h5>Attendance Overview</h5>
+                    <canvas id="attendanceChart"></canvas>
+                  </div>
+                </div>
+              </div>
+            </div>
+          </section>
+        </main>
+
+        <div class="modal fade" id="employeeModal" tabindex="-1">
+          <div class="modal-dialog modal-lg">
+            <div class="modal-content">
+              <div class="modal-header">
+                <h5 class="modal-title">
+                  {{ editingEmployee ? 'Edit Employee' : 'Add Employee' }}
+                </h5>
+                <button
+                  type="button"
+                  class="btn-close"
+                  data-bs-dismiss="modal"
+                ></button>
+              </div>
+              <div class="modal-body">
+                <form @submit.prevent="saveEmployee" class="row g-3">
+                  <div class="col-md-6">
+                    <label class="form-label">Full Name</label
+                    ><input
+                      v-model="employeeForm.name"
+                      class="form-control"
+                      required
+                    />
+                  </div>
+                  <div class="col-md-6">
+                    <label class="form-label">Email</label
+                    ><input
+                      v-model="employeeForm.email"
+                      type="email"
+                      class="form-control"
+                      required
+                    />
+                  </div>
+                  <div class="col-md-6">
+                    <label class="form-label">Phone</label
+                    ><input
+                      v-model="employeeForm.phone"
+                      class="form-control"
+                      required
+                    />
+                  </div>
+                  <div class="col-md-6">
+                    <label class="form-label">Department</label
+                    ><select
+                      v-model="employeeForm.department"
+                      class="form-select"
+                      required
+                    >
+                      <option v-for="dept in departments">{{ dept }}</option>
+                    </select>
+                  </div>
+                  <div class="col-md-6">
+                    <label class="form-label">Position</label
+                    ><input
+                      v-model="employeeForm.position"
+                      class="form-control"
+                      required
+                    />
+                  </div>
+                  <div class="col-md-6">
+                    <label class="form-label">Salary</label
+                    ><input
+                      v-model.number="employeeForm.salary"
+                      type="number"
+                      min="1"
+                      class="form-control"
+                      required
+                    />
+                  </div>
+                  <div class="col-md-6">
+                    <label class="form-label">Employment Date</label
+                    ><input
+                      v-model="employeeForm.employmentDate"
+                      type="date"
+                      class="form-control"
+                      required
+                    />
+                  </div>
+                  <div class="col-md-6">
+                    <label class="form-label">Emergency Contact</label
+                    ><input
+                      v-model="employeeForm.emergencyContact"
+                      class="form-control"
+                      required
+                    />
+                  </div>
+                  <div class="col-12">
+                    <button class="btn btn-primary">Save Employee</button>
+                  </div>
+                </form>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <div class="modal fade" id="detailsModal" tabindex="-1">
+          <div class="modal-dialog">
+            <div class="modal-content">
+              <div class="modal-header">
+                <h5 class="modal-title">Employee Details</h5>
+                <button
+                  type="button"
+                  class="btn-close"
+                  data-bs-dismiss="modal"
+                ></button>
+              </div>
+              <div class="modal-body" v-if="selectedEmployee">
+                <p><strong>Name:</strong> {{ selectedEmployee.name }}</p>
+                <p><strong>Email:</strong> {{ selectedEmployee.email }}</p>
+                <p><strong>Phone:</strong> {{ selectedEmployee.phone }}</p>
+                <p>
+                  <strong>Department:</strong> {{ selectedEmployee.department }}
+                </p>
+                <p>
+                  <strong>Position:</strong> {{ selectedEmployee.position }}
+                </p>
+                <p>
+                  <strong>Salary:</strong> {{ currency(selectedEmployee.salary)
+                  }}
+                </p>
+                <p>
+                  <strong>Employment Date:</strong> {{
+                  selectedEmployee.employmentDate }}
+                </p>
+                <p>
+                  <strong>Emergency Contact:</strong> {{
+                  selectedEmployee.emergencyContact }}
+                </p>
+                <p>
+                  <strong>Employment History:</strong> Started as part of {{
+                  selectedEmployee.department }} team and currently works as {{
+                  selectedEmployee.position }}.
+                </p>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <div class="modal fade" id="payslipModal" tabindex="-1">
+          <div class="modal-dialog">
+            <div class="modal-content">
+              <div class="modal-header">
+                <h5 class="modal-title">Digital Payslip</h5>
+                <button
+                  type="button"
+                  class="btn-close"
+                  data-bs-dismiss="modal"
+                ></button>
+              </div>
+              <div class="modal-body" id="payslipArea" v-if="payslip.employee">
+                <h4 class="fw-bold text-primary">ModernTech Solutions</h4>
+                <p>Payslip Date: {{ new Date().toLocaleDateString() }}</p>
+                <hr />
+                <p><strong>Employee:</strong> {{ payslip.employee.name }}</p>
+                <p><strong>Employee ID:</strong> {{ payslip.employee.id }}</p>
+                <p>
+                  <strong>Gross Salary:</strong> {{ currency(payslip.gross) }}
+                </p>
+                <p><strong>Tax:</strong> -{{ currency(payslip.tax) }}</p>
+                <p><strong>UIF:</strong> -{{ currency(payslip.uif) }}</p>
+                <p>
+                  <strong>Medical Aid:</strong> -{{ currency(payslip.medical) }}
+                </p>
+                <hr />
+                <h5>Net Salary: {{ currency(payslip.net) }}</h5>
+                <button
+                  class="btn btn-outline-primary mt-2"
+                  onclick="window.print()"
+                >
+                  Print Payslip
+                </button>
+              </div>
+            </div>
+          </div>
+        </div>
+      </section>
+    </div>
+    <script src="https://cdn.jsdelivr.net/npm/vue@3.4.21/dist/vue.global.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/js/bootstrap.bundle.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <script src="js/app.js"></script>
+  </body>
+</html>
